@@ -1,0 +1,23 @@
+# Set the theme to "TwoDark"
+--theme=TwoDark
+
+# Show line numbers, Git modifications and file header (but no grid)
+--style="numbers,header,rule"
+
+# Set pager options
+--pager="less -R -F --incsearch -g -i -j.5"
+
+# Terminal Width
+--terminal-width=-4
+
+# Wrap mode
+--wrap=auto
+
+# Tabs
+--tabs=2
+
+# When to use paging
+--paging=auto
+
+# Syntax Mappings
+--map-syntax='*.conf:INI'

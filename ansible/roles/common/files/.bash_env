@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# SYSTEM
+export BASH_SILENCE_DEPRECATION_WARNING=1
+export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+export EDITOR=vi
+export PAGER="bat"
+export LANG="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
+export LC_CTYPE="en_US.UTF-8"
+
+# Bash History
+shopt -s histappend
+shopt -s cmdhist
+export HISTCONTROL=erasedups
+export HISTSIZE=5000
+export HISTFILESIZE=5000
+export HISTTIMEFORMAT='%F %T '
+export HISTIGNORE="&:exit:[bf]g:pwd:?:??:history:[ \t]*"
+
+# bat
+export BAT_CONFIG_PATH="$HOME/.batconfig"
+
+# fzf
+# Use ag for feeding into fzf for searching files.
+export FZF_DEFAULT_COMMAND='ag -U --hidden --ignore .git -g ""'
+# Color: https://github.com/junegunn/fzf/wiki/Color-schemes - Solarized Dark
+# Bind F1 key to toggle preview window on/off
+export FZF_DEFAULT_OPTS='--bind "F1:toggle-preview" --preview "rougify {} 2> /dev/null || bat --style=numbers --color=always --line-range :500 {} 2> /dev/null || tree -C {} 2> /dev/null | head -100"'
+
+# Show long commands if needed
+# From https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings
+# Bind F1 key to toggle preview window on/off
+export FZF_CTRL_R_OPTS='--bind "F1:toggle-preview" --preview "echo {}" --preview-window down:3:hidden:wrap'

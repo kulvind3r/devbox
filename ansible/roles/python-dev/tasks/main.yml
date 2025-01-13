@@ -1,0 +1,8 @@
+- name: Install pip
+  package:
+    name:
+      - python3-pip
+
+- name: Install uv
+  shell: |
+    pip install uv

@@ -1,0 +1,259 @@
+- name: Install common packages
+  become: yes
+  package:
+    name:
+      - tig
+      - autojump
+      - vim
+      - bat
+      - jq
+      - yq
+      - git
+      - git-delta
+      - m4
+      - unzip
+      - silversearcher-ag
+      - fzf
+      - coreutils
+      - ca-certificates
+      - apt-transport-https
+      - jsonnet
+
+# K9S
+- name: Check if k9s binary exists
+  stat: 
+    path: /usr/bin/k9s
+  register: k9s_binary
+
+- name: Install k9s
+  become: yes
+  apt:
+    deb: https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_linux_arm64.deb
+  when: not k9s_binary.stat.exists
+
+# kubectl
+- name: Install kubectl
+  become: yes
+  community.general.snap:
+    name: kubectl
+    classic: true
+
+# aws cli
+- name: Check if aws binary exists
+  stat: 
+    path: /usr/local/aws-cli/v2/current/dist/aws
+  register: aws_binary
+
+- name: Install awscli
+  shell: |
+    cd /tmp
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"
+    unzip awscliv2.zip
+    sudo ./aws/install
+    cd -
+  when: not aws_binary.stat.exists
+
+# Vault
+- name: Check hashicorp repo is present
+  stat: 
+    path: /etc/apt/sources.list.d/hashicorp.list
+  register: hashicorp_repo
+
+- name: Install hashicorp repository
+  shell: |
+    wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+  when: not hashicorp_repo.stat.exists
+
+- name: Install hashicorp vault
+  become: yes
+  apt:
+    update-cache: true
+    name: vault
+
+# Docker
+- name: Check docker repo is present
+  stat: 
+    path: /etc/apt/sources.list.d/docker.list
+  register: docker_repo
+
+- name: Install docker repository
+  shell: |
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  when: not docker_repo.stat.exists
+
+- name: Install docker
+  become: yes
+  apt:
+    update-cache: true
+    name: 
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+
+- name: add "docker" usergroup
+  group:
+    name: docker
+
+- name: add current user to "docker" group
+  become: yes
+  user:
+    name: "{{ current_user }}"
+    groups: docker
+    append: yes
+
+# Helm
+- name: Check helm repo is present
+  stat: 
+    path: /etc/apt/sources.list.d/helm-stable-debian.list
+  register: helm_repo
+
+- name: Install helm repository
+  shell: |
+    curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+  when: not helm_repo.stat.exists
+
+- name: Install helm
+  become: yes
+  apt:
+    update-cache: true
+    name: helm
+
+# Mozilla sops
+- name: Check if Mozilla SOPS binary exists
+  stat: 
+    path: /usr/bin/sops
+  register: sops_binary
+
+- name: Mozilla SOPS
+  become: yes
+  apt:
+    deb: https://github.com/getsops/sops/releases/download/v3.9.3/sops_3.9.3_arm64.deb
+  when: not sops_binary.stat.exists
+
+# Helmfile
+- name: Install helmfile
+  become: yes
+  shell: |
+    if ! which helmfile; then
+      cd /tmp
+      wget https://github.com/helmfile/helmfile/releases/download/v0.169.2/helmfile_0.169.2_linux_arm64.tar.gz
+      tar -xvzf helmfile_0.169.2_linux_arm64.tar.gz
+      mv helmfile /usr/bin/
+      cd -
+    fi
+
+# Kubeconform
+- name: Install kubeconform
+  become: yes
+  shell: |
+    if ! which kubeconform; then
+      cd /tmp
+      wget https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-arm64.tar.gz
+      tar -xvzf kubeconform-linux-arm64.tar.gz
+      mv kubeconform /usr/bin/
+      cd -
+    fi
+
+# Configure Utilities
+
+# vim
+- name: Create vim autoload directory
+  file:
+    path: ~/.vim/autoload
+    state: directory
+
+- name: Deploy vim plugin manager
+  copy:
+    dest: ~/.vim/autoload/plug.vim
+    src: vim/plug.vim
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+- name: Deploy vim configuration
+  copy:
+    dest: ~/
+    src: vim/.vimrc
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# aliases
+- name: Deploy Bash Aliases
+  copy:
+    dest: ~/
+    src: .bash_aliases
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# env file
+- name: Deploy bash env file
+  copy:
+    dest: ~/
+    src: .bash_env
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# bash_env sourcing
+- name: Add bash_env sourcing to .bashrc
+  lineinfile:
+    path: ~/.bashrc
+    search_string: 'source ~/.bash_env;'
+    line: '[ -f ~/.bash_env ] && source ~/.bash_env'
+    state: present
+
+# bat pager config file
+- name: Deploy bat config
+  copy:
+    dest: ~/
+    src: .batconfig
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# fzf config file
+- name: Deploy fzf config
+  copy:
+    dest: ~/
+    src: .fzf.bash
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# fzf config sourcing
+- name: add fzf config sourcing to .bashrc
+  lineinfile:
+    path: ~/.bashrc
+    search_string: 'source ~/.fzf.bash;'
+    line: '[ -f ~/.fzf.bash ] && source ~/.fzf.bash'
+    state: present
+
+# git config file
+- name: Deploy git config
+  copy:
+    dest: ~/
+    src: .gitconfig
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# git_multi script
+- name: Deploy git_multi.sh
+  become: yes
+  copy:
+    dest: /usr/local/bin/git_multi.sh
+    src: git_multi.sh
+    owner: "root"
+    group: "root"
+    mode: 0755
+
+# enable autojump
+- name: add autojump.sh 
+  lineinfile:
+    path: ~/.bashrc
+    search_string: 'source /usr/share/autojump/autojump.bash'
+    line: '[ -f /usr/share/autojump/autojump.bash ] && source /usr/share/autojump/autojump.bash'
+    state: present

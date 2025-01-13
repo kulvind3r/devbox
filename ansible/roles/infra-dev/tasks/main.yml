@@ -1,0 +1,37 @@
+- name: Install terraform and packer
+  become: yes
+  apt:
+    update-cache: true
+    name: 
+      - terraform
+      - packer
+
+# MicroK8s
+- name: Install MicroK8S
+  become: yes
+  community.general.snap:
+    name: microk8s
+    classic: true
+    channel: 1.32
+
+- name: add current user to "microk8s" group
+  become: yes
+  user:
+    name: "{{ current_user }}"
+    groups: microk8s
+    append: yes
+
+- name: setup kube config directory
+  file:
+    path: ~/.kube
+    state: directory
+    recurse: yes
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+- name: setup kube config
+  file:
+    path: ~/.kube/config
+    state: touch
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
