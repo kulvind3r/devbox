@@ -1,23 +1,26 @@
 # DevBox Setup
 
-Automate setting up a development environment on Mac and potentially Windows machines in future.
+Automated remote development environment setup on Mac. (Windows soon to come).
 
 Dev environment runs as a guest VM on Host OS. Lima based VM on Mac and WSL on Windows. 
 
-End user is expected to use the remote dev environment feature of their IDE of choice to connect with VM via SSH and use the guest vm for all dev operations, build, testing, debugging etc.
+Use ssh based remote dev env feature of your IDE for build, testing, debugging etc.
 
-Filesystem of Host machine is mounted with writes enabled within the guest os to provide seamless file sharing, editing and transfer. Clipboard sharing is a non-issue as the IDE / Editors are run by the Host OS.
+Host file system mounted in guest with rw mode for seamless file sharing, editing and transfer. Clipboard shared over terminal
 
 ## Present Support
 
-Code has been tested in following configuration
+Following configurations tested
 
 ### Mac
 - __Host OS__ : macOS Sonoma 14.7 on Apple M2  Chip
 
-- __Guest OS__ : ubuntu 24.04 LTS ARM
+- __Guest OS__ : ubuntu 24.04 LTS ARM ( CPU Cores = Host_Cores/2 , Memory = Host_Memory/2 )
 
 - __Host OS IDE__ : VS Code 1.96.2
+
+### Windows
+To Come
 
 ## Usage
 
