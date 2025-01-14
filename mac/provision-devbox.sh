@@ -34,13 +34,16 @@ else
 fi
 
 log "Enable ssh to lima vm"
-if grep $VM_NAME  ~/.ssh/config > /dev/null; 
+if grep $VM_NAME ~/.ssh/config > /dev/null; 
 then 
     log "SSH already enabled";
 else
     echo "" >> ~/.ssh/config;
     echo "Include ${LIMA_HOME:-$HOME/.lima}/$VM_NAME/ssh.config" >> ~/.ssh/config;
 fi
+
+log "Detect user created by lima";
+USER=$(limactl shell devbox whoami)
 
 log "Add symlink to OSX Home directory in Guest OS"
 run_in_vm ln -sf /Users/$USER /home/$USER.linux/osx

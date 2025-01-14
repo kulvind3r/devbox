@@ -30,6 +30,9 @@ else
     exit 1
 fi
 
+log "Detect user created by lima";
+USER=$(limactl shell devbox whoami)
+
 log "Run ansible code"
 run_in_vm ansible-playbook ./ansible/$ROLE.yml --extra-vars "current_user=$USER"
 
