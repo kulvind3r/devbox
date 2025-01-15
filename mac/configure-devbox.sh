@@ -31,10 +31,10 @@ else
 fi
 
 log "Detect user created by lima";
-USER=$(limactl shell devbox whoami)
+VM_USER=$(limactl shell devbox whoami)
 
 log "Run ansible code"
-run_in_vm ansible-playbook ./ansible/$ROLE.yml --extra-vars "current_user=$USER"
+run_in_vm ansible-playbook ./ansible/$ROLE.yml --extra-vars "current_user=$VM_USER"
 
 log "Check restart requirement"
 if run_in_vm microk8s version; then

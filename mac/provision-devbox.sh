@@ -43,13 +43,13 @@ else
 fi
 
 log "Detect user created by lima";
-USER=$(limactl shell devbox whoami)
+VM_USER=$(limactl shell devbox whoami)
 
 log "Add symlink to OSX Home directory in Guest OS"
-run_in_vm ln -sf /Users/$USER /home/$USER.linux/osx
+run_in_vm ln -sf /Users/$USER /home/$VM_USER.linux/osx
 
 log "Copy existing ssh keys and known host details to vm"
-run_in_vm cp -r /Users/$USER/.ssh/* /home/$USER.linux/.ssh/
+run_in_vm cp -r /Users/$USER/.ssh/* /home/$VM_USER.linux/.ssh/
 
 log "Install ansible"
 if run_in_vm which ansible > /dev/null; 
