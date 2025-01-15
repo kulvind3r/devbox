@@ -21,28 +21,31 @@ run_in_vm() {
     limactl shell $VM_NAME $@
 }
 
-log "Validate devbox is setup and running"
-if limactl list | grep devbox | grep -iq running;
+log "Validate $VM_NAME is setup and running"
+if limactl list | grep $VM_NAME | grep -iq running;
 then
     log "$VM_NAME exists and is running. Continuing with configuration."
 else
-    log "$VM_NAME is either not provisioned or is stopped. Please makesure 'provision-devbox-mac' succeeds before proceeding"
+    log "$VM_NAME is either not provisioned or is stopped. Please makesure 'provision-devbox' succeeds before proceeding"
     exit 1
 fi
 
 log "Detect user created by lima";
-VM_USER=$(limactl shell devbox whoami)
+VM_USER=$(limactl shell $VM_NAME whoami)
+
+log "Detect lima vm arch";
+VM_ARCH=$(limactl shell $VM_NAME uname -m)
 
 log "Run ansible code"
-run_in_vm ansible-playbook ./ansible/$ROLE.yml --extra-vars "current_user=$VM_USER"
+run_in_vm ansible-playbook ./ansible/$ROLE.yml --extra-vars "current_user=$VM_USER" --extra-vars "vm_arch=$VM_ARCH"
 
 log "Check restart requirement"
 if run_in_vm microk8s version; then
     log "group changes already applied. skipping restart"
 else
     log "Restart VM to reload group configuration changes"
-    limactl stop devbox
-    limactl start devbox
+    limactl stop $VM_NAME
+    limactl start $VM_NAME
 fi
 
 # uses limactl shell instead of run_in_vm function to force ~ evaluation inside vm

@@ -27,8 +27,20 @@
 
 - name: Install k9s
   become: yes
-  apt:
-    deb: https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_linux_arm64.deb
+  shell: |
+    K9S_PACKAGE_URL=""
+    if [ "{{ vm_arch }}" = "aarch64" ]; then
+      K9S_PACKAGE_URL=https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_linux_arm64.deb
+    elif [ "{{ vm_arch }}" = "x86_64" ]; then
+      K9S_PACKAGE_URL=https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_linux_amd64.deb
+    else
+      echo "Cannot detect a supported architecture, skipping k9s installation"
+      exit 0
+    fi
+
+    wget -O /tmp/k9s_linux.deb $K9S_PACKAGE_URL
+    sudo dpkg -i /tmp/k9s_linux.deb 
+    rm -f /tmp/k9s_linux.deb
   when: not k9s_binary.stat.exists
 
 # kubectl
