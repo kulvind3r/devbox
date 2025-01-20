@@ -19,62 +19,12 @@
       - apt-transport-https
       - jsonnet
 
-# K9S
-- name: Check if k9s binary exists
-  stat: 
-    path: /usr/bin/k9s
-  register: k9s_binary
-
-- name: Install k9s
-  become: yes
-  shell: |
-    K9S_PACKAGE_URL=""
-    if [ "{{ vm_arch }}" = "aarch64" ]; then
-      K9S_PACKAGE_URL=https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_linux_arm64.deb
-    elif [ "{{ vm_arch }}" = "x86_64" ]; then
-      K9S_PACKAGE_URL=https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_linux_amd64.deb
-    else
-      echo "Cannot detect a supported architecture, skipping k9s installation"
-      exit 0
-    fi
-
-    wget -O /tmp/k9s_linux.deb $K9S_PACKAGE_URL
-    sudo dpkg -i /tmp/k9s_linux.deb 
-    rm -f /tmp/k9s_linux.deb
-  when: not k9s_binary.stat.exists
-
 # kubectl
 - name: Install kubectl
   become: yes
   community.general.snap:
     name: kubectl
     classic: true
-
-# aws cli
-- name: Check if aws binary exists
-  stat: 
-    path: /usr/local/aws-cli/v2/current/dist/aws
-  register: aws_binary
-
-- name: Install awscli
-  shell: |
-    AWS_PACKAGE_URL=""
-    if [ "{{ vm_arch }}" = "aarch64" ]; then
-      AWS_PACKAGE_URL=https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip
-    elif [ "{{ vm_arch }}" = "x86_64" ]; then
-      AWS_PACKAGE_URL=https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-    else
-      echo "Cannot detect a supported architecture, skipping awscli installation"
-      exit 0
-    fi
-
-    wget -O /tmp/awscliv2.zip $AWS_PACKAGE_URL
-    cd /tmp
-    unzip awscliv2.zip
-    sudo ./aws/install
-    cd -
-    rm -f /tmp/awscliv2.zip
-  when: not aws_binary.stat.exists
 
 # Vault
 - name: Check hashicorp repo is present
@@ -116,80 +66,10 @@
     update-cache: true
     name: helm
 
-# Mozilla sops
-- name: Check if Mozilla SOPS binary exists
-  stat: 
-    path: /usr/bin/sops
-  register: sops_binary
-
-- name: Mozilla SOPS
-  become: yes
-  shell: |
-    SOPS_PACKAGE_URL=""
-    if [ "{{ vm_arch }}" = "aarch64" ]; then
-      SOPS_PACKAGE_URL=https://github.com/getsops/sops/releases/download/v3.9.3/sops_3.9.3_arm64.deb
-    elif [ "{{ vm_arch }}" = "x86_64" ]; then
-      SOPS_PACKAGE_URL=https://github.com/getsops/sops/releases/download/v3.9.3/sops_3.9.3_amd64.deb
-    else
-      echo "Cannot detect a supported architecture, skipping sops installation"
-      exit 0
-    fi
-    wget -O /tmp/sops_linux.deb $SOPS_PACKAGE_URL
-    sudo dpkg -i /tmp/sops_linux.deb 
-    rm -f /tmp/sops_linux.deb 
-  when: not sops_binary.stat.exists
-
-# Helmfile
-- name: Check if helmfile binary exists
-  stat: 
-    path: /usr/bin/helmfile
-  register: helmfile_binary
-
-- name: Install helmfile
-  become: yes
-  shell: |
-    HELMFILE_PACKAGE_URL=""
-    if [ "{{ vm_arch }}" = "aarch64" ]; then
-      HELMFILE_PACKAGE_URL="https://github.com/helmfile/helmfile/releases/download/v0.169.2/helmfile_0.169.2_linux_arm64.tar.gz"
-    elif [ "{{ vm_arch }}" = "x86_64" ]; then
-      HELMFILE_PACKAGE_URL="https://github.com/helmfile/helmfile/releases/download/v0.170.0/helmfile_0.170.0_linux_amd64.tar.gz"
-    else
-      echo "Cannot detect a supported architecture, skipping helmfile installation"
-      exit 0
-    fi
-    wget -O /tmp/helmfile_linux.tar.gz $HELMFILE_PACKAGE_URL
-
-    cd /tmp
-    tar -xvzf helmfile_linux.tar.gz
-    mv helmfile /usr/bin/
-    cd -
-  when: not helmfile_binary.stat.exists
-
-# Kubeconform
-- name: Check if kubeconform binary exists
-  stat: 
-    path: /usr/bin/kubeconform
-  register: kubeconform_binary
-
-- name: Install kubeconform
-  become: yes
-  shell: |
-    KUBECONFORM_PACKAGE_URL=""
-    if [ "{{ vm_arch }}" = "aarch64" ]; then
-      KUBECONFORM_PACKAGE_URL="https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-arm64.tar.gz"
-    elif [ "{{ vm_arch }}" = "x86_64" ]; then
-      KUBECONFORM_PACKAGE_URL="https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz"
-    else
-      echo "Cannot detect a supported architecture, skipping kuebconform installation"
-      exit 0
-    fi
-    wget -O /tmp/kubeconform-linux.tar.gz $KUBECONFORM_PACKAGE_URL
-
-    cd /tmp
-    tar -xvzf kubeconform-linux.tar.gz
-    mv kubeconform /usr/bin/
-    cd -
-  when: not kubeconform_binary.stat.exists
+# Install tools with different package
+# for different arch. inludes k9s, awscli, helmfile etc.
+- name: Install arch specific packages
+  include_tasks: multi-arch.yml
 
 # Configure Utilities
 - name: Configure utilities
