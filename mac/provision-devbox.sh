@@ -38,6 +38,7 @@ if grep $VM_NAME ~/.ssh/config > /dev/null;
 then 
     log "SSH already enabled";
 else
+    mkdir -m 700 -p ~/.ssh
     echo "" >> ~/.ssh/config;
     echo "Include ${LIMA_HOME:-$HOME/.lima}/$VM_NAME/ssh.config" >> ~/.ssh/config;
 fi
