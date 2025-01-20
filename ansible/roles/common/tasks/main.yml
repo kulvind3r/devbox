@@ -58,11 +58,22 @@
 
 - name: Install awscli
   shell: |
+    AWS_PACKAGE_URL=""
+    if [ "{{ vm_arch }}" = "aarch64" ]; then
+      AWS_PACKAGE_URL=https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip
+    elif [ "{{ vm_arch }}" = "x86_64" ]; then
+      AWS_PACKAGE_URL=https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+    else
+      echo "Cannot detect a supported architecture, skipping awscli installation"
+      exit 0
+    fi
+
+    wget -O /tmp/awscliv2.zip $AWS_PACKAGE_URL
     cd /tmp
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"
     unzip awscliv2.zip
     sudo ./aws/install
     cd -
+    rm -f /tmp/awscliv2.zip
   when: not aws_binary.stat.exists
 
 # Vault
@@ -84,41 +95,8 @@
     name: vault
 
 # Docker
-- name: Check docker repo is present
-  stat: 
-    path: /etc/apt/sources.list.d/docker.list
-  register: docker_repo
-
-- name: Install docker repository
-  shell: |
-    sudo install -m 0755 -d /etc/apt/keyrings
-    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-    sudo chmod a+r /etc/apt/keyrings/docker.asc
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-  when: not docker_repo.stat.exists
-
 - name: Install docker
-  become: yes
-  apt:
-    update-cache: true
-    name: 
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-buildx-plugin
-      - docker-compose-plugin
-
-- name: add "docker" usergroup
-  group:
-    name: docker
-
-- name: add current user to "docker" group
-  become: yes
-  user:
-    name: "{{ current_user }}"
-    groups: docker
-    append: yes
+  include_tasks: docker.yml
 
 # Helm
 - name: Check helm repo is present
@@ -146,126 +124,73 @@
 
 - name: Mozilla SOPS
   become: yes
-  apt:
-    deb: https://github.com/getsops/sops/releases/download/v3.9.3/sops_3.9.3_arm64.deb
+  shell: |
+    SOPS_PACKAGE_URL=""
+    if [ "{{ vm_arch }}" = "aarch64" ]; then
+      SOPS_PACKAGE_URL=https://github.com/getsops/sops/releases/download/v3.9.3/sops_3.9.3_arm64.deb
+    elif [ "{{ vm_arch }}" = "x86_64" ]; then
+      SOPS_PACKAGE_URL=https://github.com/getsops/sops/releases/download/v3.9.3/sops_3.9.3_amd64.deb
+    else
+      echo "Cannot detect a supported architecture, skipping sops installation"
+      exit 0
+    fi
+    wget -O /tmp/sops_linux.deb $SOPS_PACKAGE_URL
+    sudo dpkg -i /tmp/sops_linux.deb 
+    rm -f /tmp/sops_linux.deb 
   when: not sops_binary.stat.exists
 
 # Helmfile
+- name: Check if helmfile binary exists
+  stat: 
+    path: /usr/bin/helmfile
+  register: helmfile_binary
+
 - name: Install helmfile
   become: yes
   shell: |
-    if ! which helmfile; then
-      cd /tmp
-      wget https://github.com/helmfile/helmfile/releases/download/v0.169.2/helmfile_0.169.2_linux_arm64.tar.gz
-      tar -xvzf helmfile_0.169.2_linux_arm64.tar.gz
-      mv helmfile /usr/bin/
-      cd -
+    HELMFILE_PACKAGE_URL=""
+    if [ "{{ vm_arch }}" = "aarch64" ]; then
+      HELMFILE_PACKAGE_URL="https://github.com/helmfile/helmfile/releases/download/v0.169.2/helmfile_0.169.2_linux_arm64.tar.gz"
+    elif [ "{{ vm_arch }}" = "x86_64" ]; then
+      HELMFILE_PACKAGE_URL="https://github.com/helmfile/helmfile/releases/download/v0.170.0/helmfile_0.170.0_linux_amd64.tar.gz"
+    else
+      echo "Cannot detect a supported architecture, skipping helmfile installation"
+      exit 0
     fi
+    wget -O /tmp/helmfile_linux.tar.gz $HELMFILE_PACKAGE_URL
+
+    cd /tmp
+    tar -xvzf helmfile_linux.tar.gz
+    mv helmfile /usr/bin/
+    cd -
+  when: not helmfile_binary.stat.exists
 
 # Kubeconform
+- name: Check if kubeconform binary exists
+  stat: 
+    path: /usr/bin/kubeconform
+  register: kubeconform_binary
+
 - name: Install kubeconform
   become: yes
   shell: |
-    if ! which kubeconform; then
-      cd /tmp
-      wget https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-arm64.tar.gz
-      tar -xvzf kubeconform-linux-arm64.tar.gz
-      mv kubeconform /usr/bin/
-      cd -
+    KUBECONFORM_PACKAGE_URL=""
+    if [ "{{ vm_arch }}" = "aarch64" ]; then
+      KUBECONFORM_PACKAGE_URL="https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-arm64.tar.gz"
+    elif [ "{{ vm_arch }}" = "x86_64" ]; then
+      KUBECONFORM_PACKAGE_URL="https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz"
+    else
+      echo "Cannot detect a supported architecture, skipping kuebconform installation"
+      exit 0
     fi
+    wget -O /tmp/kubeconform-linux.tar.gz $KUBECONFORM_PACKAGE_URL
+
+    cd /tmp
+    tar -xvzf kubeconform-linux.tar.gz
+    mv kubeconform /usr/bin/
+    cd -
+  when: not kubeconform_binary.stat.exists
 
 # Configure Utilities
-
-# vim
-- name: Create vim autoload directory
-  file:
-    path: ~/.vim/autoload
-    state: directory
-
-- name: Deploy vim plugin manager
-  copy:
-    dest: ~/.vim/autoload/plug.vim
-    src: vim/plug.vim
-    owner: "{{ current_user }}"
-    group: "{{ current_user }}"
-
-- name: Deploy vim configuration
-  copy:
-    dest: ~/
-    src: vim/.vimrc
-    owner: "{{ current_user }}"
-    group: "{{ current_user }}"
-
-# aliases
-- name: Deploy Bash Aliases
-  copy:
-    dest: ~/
-    src: .bash_aliases
-    owner: "{{ current_user }}"
-    group: "{{ current_user }}"
-
-# env file
-- name: Deploy bash env file
-  copy:
-    dest: ~/
-    src: .bash_env
-    owner: "{{ current_user }}"
-    group: "{{ current_user }}"
-
-# bash_env sourcing
-- name: Add bash_env sourcing to .bashrc
-  lineinfile:
-    path: ~/.bashrc
-    search_string: 'source ~/.bash_env;'
-    line: '[ -f ~/.bash_env ] && source ~/.bash_env'
-    state: present
-
-# bat pager config file
-- name: Deploy bat config
-  copy:
-    dest: ~/
-    src: .batconfig
-    owner: "{{ current_user }}"
-    group: "{{ current_user }}"
-
-# fzf config file
-- name: Deploy fzf config
-  copy:
-    dest: ~/
-    src: .fzf.bash
-    owner: "{{ current_user }}"
-    group: "{{ current_user }}"
-
-# fzf config sourcing
-- name: add fzf config sourcing to .bashrc
-  lineinfile:
-    path: ~/.bashrc
-    search_string: 'source ~/.fzf.bash;'
-    line: '[ -f ~/.fzf.bash ] && source ~/.fzf.bash'
-    state: present
-
-# git config file
-- name: Deploy git config
-  copy:
-    dest: ~/
-    src: .gitconfig
-    owner: "{{ current_user }}"
-    group: "{{ current_user }}"
-
-# git_multi script
-- name: Deploy git_multi.sh
-  become: yes
-  copy:
-    dest: /usr/local/bin/git_multi.sh
-    src: git_multi.sh
-    owner: "root"
-    group: "root"
-    mode: 0755
-
-# enable autojump
-- name: add autojump.sh 
-  lineinfile:
-    path: ~/.bashrc
-    search_string: 'source /usr/share/autojump/autojump.bash'
-    line: '[ -f /usr/share/autojump/autojump.bash ] && source /usr/share/autojump/autojump.bash'
-    state: present
+- name: Configure utilities
+  include_tasks: configure.yml

@@ -1,0 +1,35 @@
+- name: Check docker repo is present
+  stat: 
+    path: /etc/apt/sources.list.d/docker.list
+  register: docker_repo
+
+- name: Install docker repository
+  shell: |
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  when: not docker_repo.stat.exists
+
+- name: Install docker
+  become: yes
+  apt:
+    update-cache: true
+    name: 
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+
+- name: add "docker" usergroup
+  group:
+    name: docker
+
+- name: add current user to "docker" group
+  become: yes
+  user:
+    name: "{{ current_user }}"
+    groups: docker
+    append: yes

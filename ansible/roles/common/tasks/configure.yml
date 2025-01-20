@@ -1,0 +1,93 @@
+# vim
+- name: Create vim autoload directory
+  file:
+    path: ~/.vim/autoload
+    state: directory
+
+- name: Deploy vim plugin manager
+  copy:
+    dest: ~/.vim/autoload/plug.vim
+    src: vim/plug.vim
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+- name: Deploy vim configuration
+  copy:
+    dest: ~/
+    src: vim/.vimrc
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# aliases
+- name: Deploy Bash Aliases
+  copy:
+    dest: ~/
+    src: .bash_aliases
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# env file
+- name: Deploy bash env file
+  copy:
+    dest: ~/
+    src: .bash_env
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# bash_env sourcing
+- name: Add bash_env sourcing to .bashrc
+  lineinfile:
+    path: ~/.bashrc
+    search_string: 'source ~/.bash_env;'
+    line: '[ -f ~/.bash_env ] && source ~/.bash_env'
+    state: present
+
+# bat pager config file
+- name: Deploy bat config
+  copy:
+    dest: ~/
+    src: .batconfig
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# fzf config file
+- name: Deploy fzf config
+  copy:
+    dest: ~/
+    src: .fzf.bash
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# fzf config sourcing
+- name: add fzf config sourcing to .bashrc
+  lineinfile:
+    path: ~/.bashrc
+    search_string: 'source ~/.fzf.bash;'
+    line: '[ -f ~/.fzf.bash ] && source ~/.fzf.bash'
+    state: present
+
+# git config file
+- name: Deploy git config
+  copy:
+    dest: ~/
+    src: .gitconfig
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# git_multi script
+- name: Deploy git_multi.sh
+  become: yes
+  copy:
+    dest: /usr/local/bin/git_multi.sh
+    src: git_multi.sh
+    owner: "root"
+    group: "root"
+    mode: 0755
+
+# enable autojump
+- name: add autojump.sh 
+  lineinfile:
+    path: ~/.bashrc
+    search_string: 'source /usr/share/autojump/autojump.bash'
+    line: '[ -f /usr/share/autojump/autojump.bash ] && source /usr/share/autojump/autojump.bash'
+    state: present
