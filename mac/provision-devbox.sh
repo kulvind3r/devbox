@@ -34,6 +34,7 @@ else
 fi
 
 log "Enable ssh to lima vm"
+if [ ! -d ~/.ssh ]; then mkdir -m 700 ~/.ssh; fi
 if grep $VM_NAME ~/.ssh/config > /dev/null; 
 then 
     log "SSH already enabled";
