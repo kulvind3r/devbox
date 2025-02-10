@@ -42,6 +42,22 @@
     line: '[ -f ~/.bash_env ] && source ~/.bash_env'
     state: present
 
+# functions file
+- name: Deploy bash functions file
+  copy:
+    dest: ~/
+    src: .bash_functions
+    owner: "{{ current_user }}"
+    group: "{{ current_user }}"
+
+# bash_functions sourcing
+- name: Add bash_env sourcing to .bashrc
+  lineinfile:
+    path: ~/.bashrc
+    search_string: 'source ~/.bash_functions;'
+    line: '[ -f ~/.bash_functions ] && source ~/.bash_functions'
+    state: present
+
 # bat pager config file
 - name: Deploy bat config
   copy:
